@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: PercentageApi
+  cache:
+    type: redis
+    redis:
+      cache-null-values: true
+      time-to-live: ${REDIS_TIME_TO_LIVE}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: 6379
+      password: ${REDIS_PASSWORD}
+      timeout: 10000
+      connect-timeout: 10000
+      client-type: lettuce
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  main:
+    allow-bean-definition-overriding: true
+  aop:
+    proxy-target-class: true
+
+percentage:
+  api:
+    url: ${WIREMOCK_HOST}
+
+logging:
+  level:
+    root: INFO
