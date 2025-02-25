@@ -1,0 +1,82 @@
+services:
+  wiremock:
+    image: wiremock/wiremock:3.12.0
+    container_name: wiremock
+    ports:
+      - "8089:8080"
+    command: ["/bin/sh", "-c", "
+      mkdir -p /home/wiremock/mappings &&
+      echo '{
+        \"request\": {
+          \"method\": \"GET\",
+          \"url\": \"/percentage\"
+        },
+        \"response\": {
+          \"status\": 200,
+          \"headers\": {
+            \"Content-Type\": \"application/json\"
+          },
+          \"jsonBody\": {\"payload\": {\"amount\": \"10.0\"}}
+        }
+      }' > /home/wiremock/mappings/example-mock.json &&
+      /docker-entrypoint.sh --verbose
+    "]
+    volumes:
+      - ./mappings:/home/wiremock/mappings
+      - ./__files:/home/wiremock/__files
+    networks:
+      - test_network
+
+  redis:
+    image: redis:latest
+    container_name: myRedis
+    restart: always
+    environment:
+      REDIS_PASSWORD: torres
+    ports:
+      - "6379:6379"
+    command: redis-server --loglevel warning --requirepass torres
+    networks:
+      - test_network
+    volumes:
+      - redis_data:/data
+  db:
+    image: "postgres:latest"
+    container_name: myPostgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test
+    ports:
+      - "5432:5432"
+    networks:
+      - test_network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  api:
+    image: christomo/percentageapi:latest
+    deploy:
+      replicas: 3
+    #container_name: percentageapi
+    restart: always
+    depends_on:
+      - db
+      - redis
+      - wiremock
+    environment:
+      WIREMOCK_HOST: http://wiremock:8080
+      REDIS_HOST: redis
+      REDIS_PASSWORD: torres
+      REDIS_TIME_TO_LIVE: 1800000
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/test
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    ports:
+      - "0:8080"
+    networks:
+      - test_network
+      
+networks:
+  test_network:
+    driver: bridge
